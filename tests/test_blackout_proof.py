@@ -1,10 +1,9 @@
 from pathlib import Path
 from typing import ClassVar
 
-from typing_extensions import Self
-
 import pymupdf
 import pytest
+from typing_extensions import Self
 
 from blackout_proof import core
 from blackout_proof.cli import main
