@@ -85,6 +85,8 @@ def test_structural_object_findings(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         type = (0, "Text")
 
     class Page:
+        rect = pymupdf.Rect(0, 0, 595, 842)
+
         def annots(self) -> list[Annotation]:
             return [Annotation()]
 
@@ -98,6 +100,7 @@ def test_structural_object_findings(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         metadata: ClassVar[dict[str, str]] = {"title": "x"}
         is_form_pdf = 1
         page_count = 1
+        needs_pass = False
 
         def __enter__(self) -> Self:
             return self

@@ -20,4 +20,14 @@ blackout-proof document.pdf --format json --fail-on-findings
 - Encrypted or damaged PDFs may be unreadable and should fail closed.
 - Files never leave the computer; there is no telemetry, network request, or source modification.
 
-Supported on Python 3.10+ for Windows, macOS, and Linux. Current release: **v1.0.0**. Contributions are reviewed through pull requests. MIT licensed.
+Supported on Python 3.10+ for Windows, macOS, and Linux. Current release: **v1.1.0**. Contributions are reviewed through pull requests. MIT licensed.
+
+## Version 1.1.0: reviewed improvements
+
+Add value-free HTML page geometry previews, opt-in local OCR counts and redaction edge-case fixtures.
+
+```bash
+blackout-proof sample.pdf --format html --output review.html
+```
+
+HTML links page findings to geometry-only previews of dark cover rectangles. To preserve value-free reports, previews omit all source text and imagery rather than embedding source PDF/raster content. --ocr optionally invokes local PyMuPDF/Tesseract OCR and reports only word counts or engine-unavailable status; it is a review aid and never proof of sanitization. Tests generate rotated text/pages, transparent covers, optional layers, applied redactions, encrypted and damaged PDFs and assert source hashes are unchanged. The OCR adapter is tested with controlled success/failure substitutes; native Tesseract acceptance is not claimed. Existing outputs are protected and encrypted PDFs require prior authorized local decryption.
