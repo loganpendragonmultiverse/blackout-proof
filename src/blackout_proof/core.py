@@ -38,10 +38,13 @@ def _covered_word_count(page: Any) -> int:
     return count
 
 
-def inspect_pdf(path: Path) -> dict[str, object]:
+def inspect_pdf(path: Path, *, ocr: bool = False) -> dict[str, object]:
     raw = path.read_bytes()
     findings: list[Finding] = []
+    previews: list[dict[str, Any]] = []
     with pymupdf.open(stream=raw, filetype="pdf") as document:  # type: ignore[no-untyped-call]
+        if document.needs_pass:
+            raise ValueError("Encrypted PDF requires prior authorized local decryption")
         metadata_count = sum(bool(value) for value in document.metadata.values())
         if metadata_count:
             findings.append(
@@ -97,6 +100,37 @@ def inspect_pdf(path: Path) -> dict[str, object]:
                         "Non-redaction annotations remain on this page.",
                     )
                 )
+            covers = [
+                item["rect"]
+                for item in page.get_drawings()
+                if _dark_fill(item) and item.get("rect")
+            ]
+            regions = []
+            for cover in covers:
+                rect = cover * page.rotation_matrix
+                regions.append([round(float(v), 3) for v in rect])
+            ocr_review: dict[str, object] = {"status": "not-requested"}
+            if ocr:
+                try:
+                    textpage = page.get_textpage_ocr(full=True, dpi=150)
+                    ocr_review = {
+                        "status": "completed",
+                        "word_count": len(page.get_text("words", textpage=textpage)),
+                    }
+                except (RuntimeError, ValueError):
+                    ocr_review = {
+                        "status": "unavailable",
+                        "reason": "Local OCR engine or language data unavailable; no OCR acceptance claim",
+                    }
+            previews.append(
+                {
+                    "page": page_number,
+                    "width": float(page.rect.width),
+                    "height": float(page.rect.height),
+                    "dark_regions": regions,
+                    "ocr_review": ocr_review,
+                }
+            )
             covered_words = _covered_word_count(page)
             if covered_words:
                 findings.append(
@@ -111,6 +145,9 @@ def inspect_pdf(path: Path) -> dict[str, object]:
 
         return {
             "schemaVersion": 1,
+            "pagePreviews": previews,
+            "previewMode": "geometry-only; source text and images are omitted",
+            "ocrNote": "Optional local OCR counts are review aids, not sanitization proof",
             "source": path.name,
             "sourceSha256": hashlib.sha256(raw).hexdigest(),
             "pageCount": document.page_count,
