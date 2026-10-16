@@ -19,7 +19,7 @@ class Finding:
 
 def _dark_fill(drawing: dict[str, Any]) -> bool:
     fill = drawing.get("fill")
-    opacity = float(drawing.get("fill_opacity", 1.0))
+    opacity = float(drawing.get("fill_opacity", 1.0) or 0.0)
     return (
         isinstance(fill, (list, tuple))
         and bool(fill)
@@ -89,6 +89,17 @@ def inspect_pdf(path: Path, *, ocr: bool = False) -> dict[str, object]:
 
         for page_number, page in enumerate(document, start=1):
             annotations = list(page.annots() or [])
+            pending_redactions = sum(annotation.type[1] == "Redact" for annotation in annotations)
+            if pending_redactions:
+                findings.append(
+                    Finding(
+                        "warning",
+                        "BP008",
+                        page_number,
+                        pending_redactions,
+                        "Unapplied Redact annotations remain on this page. A marker is unfinished redaction, not proof of secret text.",
+                    )
+                )
             non_redaction = sum(annotation.type[1] != "Redact" for annotation in annotations)
             if non_redaction:
                 findings.append(

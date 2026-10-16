@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 - 2026-10-16
+
+- Warn with stable code BP008 when unapplied Redact annotations remain. Treat the marker as unfinished redaction, never proof that secret text exists.
+- Handle stroke-only pending annotation drawings without a fill-opacity crash.
+
 ## 1.1.0 - 2026-09-07
 
 - Add value-free HTML page geometry previews, opt-in local OCR counts and redaction edge-case fixtures.

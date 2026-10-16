@@ -9,3 +9,7 @@ Add value-free HTML page geometry previews, opt-in local OCR counts and redactio
 HTML links page findings to geometry-only previews of dark cover rectangles. To preserve value-free reports, previews omit all source text and imagery rather than embedding source PDF/raster content. --ocr optionally invokes local PyMuPDF/Tesseract OCR and reports only word counts or engine-unavailable status; it is a review aid and never proof of sanitization. Tests generate rotated text/pages, transparent covers, optional layers, applied redactions, encrypted and damaged PDFs and assert source hashes are unchanged. The OCR adapter is tested with controlled success/failure substitutes; native Tesseract acceptance is not claimed. Existing outputs are protected and encrypted PDFs require prior authorized local decryption.
 
 Local formatting, lint, strict types and regression tests pass. Public release completion requires the protected CI/CodeQL matrix, tagged artifacts and matching Forge catalog/detail deployment.
+
+## 1.2.0 — 2026-10-16
+
+BP008 is a warning with the page number and annotation count. It participates in `--fail-on-findings` and appears in JSON, Markdown and HTML. Annotation text, replacement text and underlying document text are never copied into the warning. Applied redactions no longer have pending markers. Stroke-only annotation drawings with no fill opacity are handled without crashing.
