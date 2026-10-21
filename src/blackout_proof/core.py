@@ -91,38 +91,30 @@ def _pdf_names(value: str) -> Iterator[str]:
             index += 2 if value[index : index + 2] == "<<" else 1
 
 
-def _covered_word_count(page: Any, drawings: list[dict[str, Any]], limits: InspectionLimits) -> int:
+def _covered_glyph_count(
+    page: Any, drawings: list[dict[str, Any]], limits: InspectionLimits
+) -> int:
     covers = [item for item in drawings if _dark_fill(item) and item.get("rect")]
     if not covers:
         return 0
-    words = page.get_text("words")
-    _within(len(words), limits.max_page_items, "page words")
-    actions = page.get_bboxlog()
-    _within(len(actions), limits.max_page_items, "page paint actions")
-    checks = count = 0
-    for word in words:
-        word_rect = pymupdf.Rect(word[:4])  # type: ignore[no-untyped-call]
-        covered = False
-        for cover in covers:
-            checks += 1
-            _within(checks, limits.max_geometry_checks, "page geometry comparisons")
-            if (word_rect & cover["rect"]).is_empty:
+    spans = page.get_texttrace()
+    _within(len(spans), limits.max_page_items, "page text spans")
+    checks = count = glyphs = 0
+    for span in spans:
+        glyphs += len(span["chars"])
+        _within(glyphs, limits.max_page_items, "page traced glyphs")
+        for character in span["chars"]:
+            if chr(character[0]).isspace():
                 continue
-            # PyMuPDF drawing seqno equals the bboxlog position. A background
-            # painted before the text is not evidence of text under a cover.
-            for sequence, (kind, bbox) in enumerate(actions):
+            glyph_rect = pymupdf.Rect(character[3])  # type: ignore[no-untyped-call]
+            for cover in covers:
                 checks += 1
                 _within(checks, limits.max_geometry_checks, "page geometry comparisons")
-                if sequence >= cover["seqno"]:
+                # Both seqno values belong to these specific paint operations;
+                # never borrow an earlier span's order for a later foreground word.
+                if cover["seqno"] > span["seqno"] and not (glyph_rect & cover["rect"]).is_empty:
+                    count += 1
                     break
-                if kind not in {"fill-text", "stroke-text", "ignore-text"}:
-                    continue
-                if not (word_rect & pymupdf.Rect(bbox)).is_empty:  # type: ignore[no-untyped-call]
-                    covered = True
-                    break
-            if covered:
-                break
-        count += int(covered)
     return count
 
 
@@ -258,15 +250,15 @@ def _analyse_pdf(raw: bytes, ocr: bool, limits: InspectionLimits) -> dict[str, o
                     "ocr_review": ocr_review,
                 }
             )
-            covered_words = _covered_word_count(page, drawings, limits)
-            if covered_words:
+            covered_glyphs = _covered_glyph_count(page, drawings, limits)
+            if covered_glyphs:
                 findings.append(
                     Finding(
                         "critical",
                         "BP007",
                         page_number,
-                        covered_words,
-                        "Extractable text intersects a later dark opaque cover.",
+                        covered_glyphs,
+                        "Extractable glyph instances intersect a later dark opaque cover.",
                     )
                 )
         return {

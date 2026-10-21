@@ -7,9 +7,9 @@ OCR is explicit opt-in, and reports contain counts only. Do not include source P
 text, image previews, metadata values, attachment names or annotation comments.
 
 Before changing detection, reproduce the behavior using synthetic real PDFs and
-include a false-positive test. BP007 uses PyMuPDF drawing `seqno` and bboxlog paint
-order; a prior background is not a later cover. See the
-[upstream API](https://pymupdf.readthedocs.io/en/latest/functions.html#Page.get_bboxlog).
+include a false-positive test. BP007 uses each traced glyph
+span's own `seqno` and the drawing's `seqno`; a prior background is not a later cover. See the
+[upstream API](https://pymupdf.readthedocs.io/en/latest/functions.html#Page.get_texttrace).
 PDF object-name scanning excludes strings, hex strings and comments, and decodes
 escaped name bytes. Structural names do not prove execution or sensitive content.
 

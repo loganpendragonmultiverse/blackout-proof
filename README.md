@@ -38,12 +38,15 @@ Documentation and the synthetic example generator are also installed under
 | BP004 | JavaScript-related PDF names in object structure |
 | BP005 | Optional-content layer objects |
 | BP006 | Non-redaction annotations |
-| BP007 | Extractable words intersecting a later dark opaque drawing |
+| BP007 | Extractable glyph instances intersecting a later dark opaque drawing |
 | BP008 | Unapplied Redact annotations |
 
-BP007 respects paint order: text painted after a dark background does not count as
+BP007 counts non-whitespace glyph instances reported by PyMuPDF text traces, not
+words. Each glyph is matched using its own paint sequence and bounding box; a later
+foreground word is not attributed to an unrelated earlier text span. Repeated paint
+operations may contribute separate glyph instances. BP007 respects paint order: text painted after a dark background does not count as
 text behind that background. Geometry remains conservative; complex shapes,
-clipping, optional layers and partially intersecting words require visual review.
+clipping, optional layers and partially intersecting glyphs require visual review.
 BP004/BP005 inspect PDF name tokens, excluding literal strings, hex strings and
 comments. A name is structural evidence to review, not proof that a script executed
 or that a layer contains sensitive data. BP008 means unfinished redaction markers,

@@ -266,3 +266,27 @@ def test_cli_invalid_limit(tmp_path, value):
     with pytest.raises(SystemExit) as error:
         main([str(tmp_path / "sample.pdf"), "--max-pages", value])
     assert error.value.code == 2
+
+
+def test_foreground_overlap_has_its_own_paint_provenance(tmp_path):
+    path = tmp_path / "overlap.pdf"
+    with pymupdf.open() as document:
+        page = document.new_page()
+        point = (72, 72)
+        page.insert_text(point, "SECRET", fontsize=20)
+        page.draw_rect(pymupdf.Rect(60, 40, 250, 90), fill=(0, 0, 0))
+        page.insert_text(point, "PUBLIC", fontsize=20, color=(1, 1, 1))
+        document.save(path)
+    finding = next(item for item in inspect_pdf(path)["findings"] if item["code"] == "BP007")
+    assert finding["count"] == 6
+    assert "glyph instances" in finding["message"]
+
+
+def test_cover_in_text_span_whitespace_is_not_a_glyph(tmp_path):
+    path = tmp_path / "gap.pdf"
+    with pymupdf.open() as document:
+        page = document.new_page()
+        page.insert_text((72, 72), "A          B", fontsize=20)
+        page.draw_rect(pymupdf.Rect(100, 45, 110, 80), fill=(0, 0, 0))
+        document.save(path)
+    assert "BP007" not in {item["code"] for item in inspect_pdf(path)["findings"]}

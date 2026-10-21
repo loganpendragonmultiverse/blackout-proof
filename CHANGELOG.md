@@ -3,7 +3,7 @@
 ## 1.3.0 - 2026-10-21
 
 - Add typed file, page, xref, serialized-object, page-item, geometry-work and OCR-pixel budgets; refuse incomplete inspections and changed source identities/bytes.
-- Respect paint order when checking dark covers and exclude literal/hex/comment text from PDF object-name checks, fixing confirmed real-PDF false positives.
+- Count extractable glyph instances using their own paint sequence, fixing foreground-word overcounting; respect paint order when checking dark covers and exclude literal/hex/comment text from PDF object-name checks, fixing confirmed real-PDF false positives.
 - Make requested OCR failures explicitly incomplete with exit 2, count-only results and native English Tesseract/missing-data regression acceptance.
 - Create reports exclusively, refuse source aliases and existing links, handle output failures, and escape source identifiers in Markdown/HTML.
 - Add complete document summaries/source fingerprints to HTML and OCR statuses to Markdown; package synthetic examples with the documentation.
