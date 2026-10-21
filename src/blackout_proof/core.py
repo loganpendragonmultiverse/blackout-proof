@@ -131,7 +131,22 @@ def _analyse_pdf(raw: bytes, ocr: bool, limits: InspectionLimits) -> dict[str, o
         _within(document.page_count, limits.max_pages, "pages")
         xrefs = document.xref_length() - 1
         _within(xrefs, limits.max_xrefs, "xref objects")
-        metadata_count = sum(bool(value) for value in document.metadata.values())
+        metadata_count = sum(
+            bool(document.metadata.get(field))
+            for field in (
+                "title",
+                "author",
+                "subject",
+                "keywords",
+                "creator",
+                "producer",
+                "creationDate",
+                "modDate",
+                "trapped",
+            )
+        )
+        # Count the XMP packet presence without extracting its values.
+        metadata_count += int(document.xref_xml_metadata() > 0)
         if metadata_count:
             findings.append(
                 Finding(
@@ -294,10 +309,18 @@ def inspect_pdf(
     if limits is not None and not isinstance(limits, InspectionLimits):
         raise ValueError("limits must be InspectionLimits")
     selected = limits or InspectionLimits()
-    with path.open("rb") as stream:
+    admission = path.stat()
+    if not stat.S_ISREG(admission.st_mode):
+        raise InspectionError("Input must be a regular PDF file")
+    # Nonblocking admission also prevents a POSIX retarget-to-FIFO race from
+    # blocking before the descriptor type and source identity can be checked.
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0)
+    with os.fdopen(os.open(path, flags), "rb") as stream:
         original = os.fstat(stream.fileno())
         original_path = path.stat()
-        if _identity(original)[:2] != _identity(original_path)[:2]:
+        if not (
+            _identity(admission)[:2] == _identity(original)[:2] == _identity(original_path)[:2]
+        ):
             raise InspectionError("Source changed while opening; no complete result")
         if not stat.S_ISREG(original.st_mode):
             raise InspectionError("Input must be a regular PDF file")

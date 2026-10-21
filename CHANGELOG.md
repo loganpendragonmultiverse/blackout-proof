@@ -2,6 +2,8 @@
 
 ## 1.3.0 - 2026-10-21
 
+- Exclude technical PDF format/encryption descriptors from BP001, count XMP packet presence without values, and refuse FIFO inputs before opening.
+
 - Compare stat and fstat metadata within their own before/after snapshots, avoiding confirmed Windows Python 3.14 ctime representation mismatches while retaining identity/hash checks.
 - Refuse PDFs that require native structural repair; cap native read sizes even with huge valid budgets.
 - Add typed file, page, xref, serialized-object, page-item, geometry-work and OCR-pixel budgets; refuse incomplete inspections and changed source identities/bytes.

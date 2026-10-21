@@ -111,6 +111,9 @@ def test_structural_object_findings(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         def embfile_names(self) -> list[str]:
             return ["hidden.bin"]
 
+        def xref_xml_metadata(self) -> int:
+            return 0
+
         def xref_length(self) -> int:
             return 3
 

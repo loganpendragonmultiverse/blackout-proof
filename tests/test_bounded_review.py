@@ -328,6 +328,7 @@ def test_stat_api_metadata_representations_do_not_fake_a_source_change(tmp_path,
         if self != source:
             return value
         return SimpleNamespace(
+            st_mode=value.st_mode,
             st_dev=value.st_dev,
             st_ino=value.st_ino,
             st_size=value.st_size,
@@ -351,6 +352,7 @@ def test_open_descriptor_must_match_named_source_identity(tmp_path, monkeypatch)
         if self != source:
             return value
         return SimpleNamespace(
+            st_mode=value.st_mode,
             st_dev=value.st_dev,
             st_ino=value.st_ino + 1,
             st_size=value.st_size,
@@ -361,3 +363,68 @@ def test_open_descriptor_must_match_named_source_identity(tmp_path, monkeypatch)
     monkeypatch.setattr(Path, "stat", replaced)
     with pytest.raises(InspectionError, match="while opening"):
         inspect_pdf(source)
+
+
+def test_fifo_refused_before_descriptor_open(tmp_path, monkeypatch):
+    if not hasattr(core.os, "mkfifo"):
+        pytest.skip("POSIX FIFO admission")
+    source = tmp_path / "named-pipe.pdf"
+    core.os.mkfifo(source)
+    original = core.os.open
+    attempted = []
+
+    def observing(path, *args, **kwargs):
+        if Path(path) == source:
+            attempted.append(path)
+            raise AssertionError("FIFO must be refused before open")
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(core.os, "open", observing)
+    with pytest.raises(InspectionError, match="regular"):
+        inspect_pdf(source)
+    assert not attempted
+
+
+def test_clean_document_has_no_information_metadata_finding(tmp_path):
+    source = tmp_path / "clean.pdf"
+    with pymupdf.open() as document:
+        document.new_page()
+        document.save(source)
+    report = inspect_pdf(source)
+    assert "BP001" not in {item["code"] for item in report["findings"]}
+    assert report["verdict"] == "no-structural-risks-found"
+
+
+def test_xmp_metadata_presence_is_counted_without_values(tmp_path):
+    source = tmp_path / "xmp.pdf"
+    with pymupdf.open() as document:
+        document.new_page()
+        document.set_xml_metadata(
+            '<x:xmpmeta xmlns:x="adobe:ns:meta/">SYNTHETIC XMP VALUE</x:xmpmeta>'
+        )
+        document.save(source)
+    report = inspect_pdf(source)
+    finding = next(item for item in report["findings"] if item["code"] == "BP001")
+    assert finding["count"] == 1
+    assert "SYNTHETIC XMP VALUE" not in json.dumps(report)
+
+
+def test_retargeted_fifo_open_is_nonblocking_and_refused(tmp_path, monkeypatch):
+    if not hasattr(core.os, "mkfifo") or not hasattr(core.os, "O_NONBLOCK"):
+        pytest.skip("POSIX nonblocking FIFO admission")
+    source = tmp_path / "sample.pdf"
+    sample(source)
+    original = core.os.open
+    flags_seen = []
+
+    def retarget(path, flags, *args, **kwargs):
+        if Path(path) == source:
+            flags_seen.append(flags)
+            source.unlink()
+            core.os.mkfifo(source)
+        return original(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(core.os, "open", retarget)
+    with pytest.raises(InspectionError, match="regular|changed"):
+        inspect_pdf(source)
+    assert len(flags_seen) == 1 and flags_seen[0] & core.os.O_NONBLOCK

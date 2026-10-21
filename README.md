@@ -129,3 +129,5 @@ See [DEVELOPMENT.md](DEVELOPMENT.md), [TESTING.md](TESTING.md),
 [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Changes are maintained
 through reviewed pull requests; there is no automatic release or monitoring promise.
 Part of the [Forge open-source collection](https://www.loganpendragonforge.com/open-source/).
+
+Metadata finding BP001 counts populated document information fields and XMP packet presence; technical format/encryption descriptors are excluded. XMP values are never extracted into reports. Direct API input admission refuses non-regular files before opening, with a nonblocking POSIX descriptor check against retargeting.
