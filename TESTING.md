@@ -45,3 +45,12 @@ For each actual tag-workflow wheel and source archive:
 
 Budgets are not native parser CPU/memory guarantees. Test failures or missing OCR
 support must remain visible and must never be relabeled as a successful empty scan.
+
+## 1.3.1 release artifact closure
+
+The Python 3.12 tag workflow checks the stable tag, project metadata and literal
+runtime version before building. It repeats the original formatting, lint, strict
+typing, full coverage-gated suite and shipped-dependency audit, verifies exact
+wheel/sdist names and metadata, and emits SHA256SUMS. Native Linux OCR acceptance,
+independent installed-artifact review and public/Forge verification remain separate
+required release gates. The workflow does not publish a release automatically.

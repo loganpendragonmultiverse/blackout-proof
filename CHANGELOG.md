@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 - 2026-10-21
+
+- Repeat the original quality and shipped-dependency audit in tagged builds, reject tag/project/runtime/package metadata mismatches, and emit SHA256SUMS over the exact built payloads.
+- Retain PDF inspection behavior, Python 3.10+ support, the six native CI combinations and the 90% branch-aware coverage gate.
+
 ## 1.3.0 - 2026-10-21
 
 - Exclude technical PDF format/encryption descriptors from BP001, count XMP packet presence without values, and refuse FIFO inputs before opening.
