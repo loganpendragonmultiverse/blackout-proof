@@ -113,7 +113,8 @@ review; other inspection failures do not produce a report.
 This is a verification aid, **not a PDF editor, redactor, legal certification,
 malware scanner or guarantee that a document is safe**. A clean structural report
 and a successful OCR count do not prove sanitization. Image-only material still
-needs visual review. Encrypted PDFs require prior authorized local decryption.
+needs visual review. Encrypted PDFs require prior authorized local decryption. PDFs that PyMuPDF had to
+structurally repair are refused rather than labeled complete.
 Files stay on your computer; the tool makes no network requests or telemetry calls
 and never modifies its source PDF.
 

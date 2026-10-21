@@ -298,3 +298,66 @@ def test_huge_valid_budget_does_not_overflow_native_read_size(tmp_path):
     assert inspect_pdf(source, limits=InspectionLimits(max_file_bytes=10**100))[
         "inspectionComplete"
     ]
+
+
+def test_automatically_repaired_pdf_is_not_a_complete_inspection(tmp_path):
+    path = tmp_path / "damaged.pdf"
+    with pymupdf.open() as document:
+        document.new_page()
+        raw = document.tobytes()
+    path.write_bytes(raw[: raw.rfind(b"\nxref")])
+    with pymupdf.open(path) as document:
+        assert document.is_repaired
+    with pytest.raises(InspectionError, match="structural repair"):
+        inspect_pdf(path)
+    output = tmp_path / "report.json"
+    with pytest.raises(SystemExit) as failure:
+        main([str(path), "--format", "json", "--output", str(output)])
+    assert failure.value.code == 2 and not output.exists()
+
+
+def test_stat_api_metadata_representations_do_not_fake_a_source_change(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    source = tmp_path / "sample.pdf"
+    sample(source)
+    original = Path.stat
+
+    def alternate(self, *args, **kwargs):
+        value = original(self, *args, **kwargs)
+        if self != source:
+            return value
+        return SimpleNamespace(
+            st_dev=value.st_dev,
+            st_ino=value.st_ino,
+            st_size=value.st_size,
+            st_mtime_ns=value.st_mtime_ns,
+            st_ctime_ns=value.st_ctime_ns + 1,
+        )
+
+    monkeypatch.setattr(Path, "stat", alternate)
+    assert inspect_pdf(source)["inspectionComplete"]
+
+
+def test_open_descriptor_must_match_named_source_identity(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    source = tmp_path / "sample.pdf"
+    sample(source)
+    original = Path.stat
+
+    def replaced(self, *args, **kwargs):
+        value = original(self, *args, **kwargs)
+        if self != source:
+            return value
+        return SimpleNamespace(
+            st_dev=value.st_dev,
+            st_ino=value.st_ino + 1,
+            st_size=value.st_size,
+            st_mtime_ns=value.st_mtime_ns,
+            st_ctime_ns=value.st_ctime_ns,
+        )
+
+    monkeypatch.setattr(Path, "stat", replaced)
+    with pytest.raises(InspectionError, match="while opening"):
+        inspect_pdf(source)

@@ -124,6 +124,8 @@ def _analyse_pdf(raw: bytes, ocr: bool, limits: InspectionLimits) -> dict[str, o
     with pymupdf.open(stream=raw, filetype="pdf") as document:  # type: ignore[no-untyped-call]
         if document.needs_pass:
             raise InspectionError("Encrypted PDF requires prior authorized local decryption")
+        if getattr(document, "is_repaired", False):
+            raise InspectionError("PDF required structural repair; no complete result")
         if document.page_count < 1:
             raise InspectionError("PDF contains no pages; no complete result")
         _within(document.page_count, limits.max_pages, "pages")
@@ -294,6 +296,9 @@ def inspect_pdf(
     selected = limits or InspectionLimits()
     with path.open("rb") as stream:
         original = os.fstat(stream.fileno())
+        original_path = path.stat()
+        if _identity(original)[:2] != _identity(original_path)[:2]:
+            raise InspectionError("Source changed while opening; no complete result")
         if not stat.S_ISREG(original.st_mode):
             raise InspectionError("Input must be a regular PDF file")
         _within(original.st_size, selected.max_file_bytes, "file bytes")
@@ -321,11 +326,16 @@ def inspect_pdf(
             check.update(block)
         field_names = ("device", "inode", "size", "mtime_ns", "ctime_ns")
         differences: list[str] = []
-        for label, current in (("descriptor", os.fstat(stream.fileno())), ("path", path.stat())):
+        # Windows stat/fstat can expose different ctime representations. Compare
+        # metadata within each API, while stable device/inode bind both views.
+        for label, baseline, current in (
+            ("descriptor", original, os.fstat(stream.fileno())),
+            ("path", original_path, path.stat()),
+        ):
             differences.extend(
                 label + ":" + name
                 for name, before, after in zip(
-                    field_names, _identity(original), _identity(current), strict=True
+                    field_names, _identity(baseline), _identity(current), strict=True
                 )
                 if before != after
             )
