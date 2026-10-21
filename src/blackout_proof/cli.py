@@ -2,19 +2,29 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+from dataclasses import fields
+from html import escape
 from pathlib import Path
 
-from .core import inspect_pdf
+from .core import InspectionLimits, inspect_pdf
 from .review import render_html
+
+
+def _literal(value: object) -> str:
+    text = escape(" ".join(str(value).splitlines()), quote=False)
+    return re.sub(r"([\\`*_{}\[\]()#+.!|~>-])", r"\\\1", text)
 
 
 def _markdown(report: dict[str, object]) -> str:
     lines = [
         "# Blackout Proof report",
         "",
-        f"- Source: `{report['source']}`",
+        f"- Source: {_literal(report['source'])}",
         f"- SHA-256: `{report['sourceSha256']}`",
         f"- Pages: {report['pageCount']}",
+        f"- Complete: {report['inspectionComplete']}",
+        f"- OCR requested: {report['ocrRequested']}",
         f"- Verdict: **{report['verdict']}**",
         "",
         "| Severity | Code | Page | Count | Finding |",
@@ -29,7 +39,21 @@ def _markdown(report: dict[str, object]) -> str:
         lines.append(
             f"| {item['severity']} | {item['code']} | {item['page'] or '-'} | {item['count']} | {item['message']} |"
         )
+    previews = report["pagePreviews"]
+    assert isinstance(previews, list)
+    lines.extend(["", "## OCR review", ""])
+    for page in previews:
+        review = page["ocr_review"]
+        detail = f"; word count: {review['word_count']}" if "word_count" in review else ""
+        lines.append(f"- Page {page['page']}: {review['status']}{detail}")
     return "\n".join(lines)
+
+
+def _positive(value: str) -> int:
+    number = int(value)
+    if number <= 0:
+        raise argparse.ArgumentTypeError("limit must be a positive integer")
+    return number
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,24 +67,43 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Opt-in local OCR word-count review (requires Tesseract data)",
     )
+    for field in fields(InspectionLimits):
+        parser.add_argument(
+            "--" + field.name.replace("_", "-"),
+            type=_positive,
+            default=field.default,
+            help=f"Inspection budget (default {field.default}); exhaustion gives no complete result",
+        )
     args = parser.parse_args(argv)
-    if args.pdf.suffix.lower() != ".pdf" or not args.pdf.is_file():
-        parser.error("input must be an existing PDF")
-    if args.output and args.output.exists():
-        parser.error("output must be a new file")
     try:
-        report = inspect_pdf(args.pdf, ocr=args.ocr)
-    except (OSError, RuntimeError, ValueError) as exc:
+        if args.pdf.suffix.lower() != ".pdf" or not args.pdf.is_file():
+            parser.error("input must be an existing PDF")
+        if args.output and (
+            args.output.is_symlink() or args.output.resolve() == args.pdf.resolve()
+        ):
+            parser.error("output must be a new file distinct from the source")
+        limits = InspectionLimits(
+            **{field.name: getattr(args, field.name) for field in fields(InspectionLimits)}
+        )
+        report = inspect_pdf(args.pdf, ocr=args.ocr, limits=limits)
+        rendered = (
+            json.dumps(report, indent=2)
+            if args.format == "json"
+            else render_html(report)
+            if args.format == "html"
+            else _markdown(report)
+        )
+        if args.output:
+            with args.output.open("x", encoding="utf-8") as stream:
+                stream.write(rendered + "\n")
+        else:
+            print(rendered)
+    except OSError:
+        parser.error(
+            "Input or report output could not be accessed; output must be a new writable file"
+        )
+    except (RuntimeError, ValueError, TypeError) as exc:
         parser.error(str(exc))
-    rendered = (
-        json.dumps(report, indent=2)
-        if args.format == "json"
-        else render_html(report)
-        if args.format == "html"
-        else _markdown(report)
-    )
-    if args.output:
-        args.output.write_text(rendered + "\n", encoding="utf-8")
-    else:
-        print(rendered)
+    if not report["inspectionComplete"]:
+        return 2
     return int(args.fail_on_findings and bool(report["findingCount"]))

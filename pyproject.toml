@@ -3,13 +3,13 @@ requires = ["setuptools>=78", "wheel"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "blackout-proof"
-version = "1.2.0"
+version = "1.3.0"
 description = "Verify PDFs locally for residual content and hidden-data redaction risks."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{ name = "Logan Pendragon Multiverse" }]
-dependencies = ["PyMuPDF>=1.26.3,<2"]
+dependencies = ["PyMuPDF>=1.28.2,<2"]
 [project.optional-dependencies]
 dev = ["build>=1.3,<2", "mypy>=1.15,<3", "pip-audit>=2.9,<3", "pytest>=8,<10", "pytest-cov>=6,<8", "ruff>=0.11,<1"]
 [project.scripts]
@@ -32,4 +32,6 @@ testpaths = ["tests"]
 addopts = "--cov=blackout_proof --cov-branch --cov-report=term-missing --cov-fail-under=90"
 
 [tool.setuptools.data-files]
-"share/doc/blackout-proof" = ["README.md", "CHANGELOG.md", "DEVELOPMENT.md", "TESTING.md", "LICENSE"]
+"share/doc/blackout-proof" = ["README.md", "CHANGELOG.md", "DEVELOPMENT.md", "TESTING.md", "LICENSE", "CONTRIBUTING.md", "SECURITY.md"]
+
+"share/doc/blackout-proof/examples" = ["examples/README.md", "examples/make_sample.py"]

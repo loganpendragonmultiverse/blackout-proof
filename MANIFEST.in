@@ -1,2 +1,6 @@
 
 include README.md CHANGELOG.md DEVELOPMENT.md TESTING.md LICENSE
+
+recursive-include examples *.md *.py
+recursive-include tests *.py
+include CONTRIBUTING.md SECURITY.md

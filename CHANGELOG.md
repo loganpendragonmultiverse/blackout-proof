@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 - 2026-10-21
+
+- Add typed file, page, xref, serialized-object, page-item, geometry-work and OCR-pixel budgets; refuse incomplete inspections and changed source identities/bytes.
+- Respect paint order when checking dark covers and exclude literal/hex/comment text from PDF object-name checks, fixing confirmed real-PDF false positives.
+- Make requested OCR failures explicitly incomplete with exit 2, count-only results and native English Tesseract/missing-data regression acceptance.
+- Create reports exclusively, refuse source aliases and existing links, handle output failures, and escape source identifiers in Markdown/HTML.
+- Add complete document summaries/source fingerprints to HTML and OCR statuses to Markdown; package synthetic examples with the documentation.
+- Retain Python 3.10+ and require audited PyMuPDF 1.28.2+ within 1.x; clarify its separate AGPL/commercial licensing.
+
 ## 1.2.0 - 2026-10-16
 
 - Warn with stable code BP008 when unapplied Redact annotations remain. Treat the marker as unfinished redaction, never proof that secret text exists.
