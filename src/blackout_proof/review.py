@@ -14,7 +14,7 @@ def render_html(report: dict[str, Any]) -> str:
         findings = "".join(
             f"<li><strong>{escape(item['code'])} / {escape(item['severity'])}</strong>: {escape(item['message'])} Count: {item['count']}</li>"
             for item in report["findings"]
-            if item["page"] in (None, page["page"])
+            if item["page"] == page["page"]
         )
         ocr = page["ocr_review"]
         sections.append(
@@ -23,8 +23,27 @@ def render_html(report: dict[str, Any]) -> str:
     links = " ".join(
         f'<a href="#page-{p["page"]}">Page {p["page"]}</a>' for p in report["pagePreviews"]
     )
+    summary = (
+        f"<p>Source: {escape(str(report['source']))}</p>"
+        f"<p>SHA-256: <code>{escape(str(report['sourceSha256']))}</code></p>"
+        f"<p>Pages: {report['pageCount']}; findings: {report['findingCount']}; "
+        f"complete: {report['inspectionComplete']}; verdict: {escape(str(report['verdict']))}</p>"
+    )
+    document_findings = "".join(
+        f"<li>{escape(item['code'])} / {escape(item['severity'])}: "
+        f"{escape(item['message'])} Count: {item['count']}</li>"
+        for item in report["findings"]
+        if item["page"] is None
+    )
+    summary += (
+        "<h2>Document findings</h2><ul>"
+        + (document_findings or "<li>No document-level findings</li>")
+        + "</ul>"
+    )
     return (
-        '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blackout Proof review</title><style>body{font:17px system-ui;background:#101820;color:#edf3f5;max-width:1100px;margin:auto;padding:24px;line-height:1.6}a{color:#8ee2ff}nav{display:flex;gap:14px;flex-wrap:wrap}section{margin:30px 0;padding:20px;border:1px solid #547080;border-radius:12px}.grid{display:grid;grid-template-columns:minmax(150px,1fr) 2fr;gap:24px}svg{background:white;width:100%;max-height:480px}rect{fill:#333;stroke:#d33;stroke-width:2}li{margin:12px 0}p{overflow-wrap:anywhere}@media(max-width:600px){.grid{grid-template-columns:1fr}body{padding:14px}}</style><h1>Blackout Proof review</h1><p>Geometry-only page previews show dark cover locations. Source text and images are deliberately omitted. A rectangle is a review region, not proof of a failed redaction. Findings remain heuristic; a clean result does not prove sanitization.</p><nav>'
+        '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blackout Proof review</title><style>body{font:17px system-ui;background:#101820;color:#edf3f5;max-width:1100px;margin:auto;padding:24px;line-height:1.6}a{color:#8ee2ff}nav{display:flex;gap:14px;flex-wrap:wrap}section{margin:30px 0;padding:20px;border:1px solid #547080;border-radius:12px}.grid{display:grid;grid-template-columns:minmax(150px,1fr) 2fr;gap:24px}svg{background:white;width:100%;max-height:480px}rect{fill:#333;stroke:#d33;stroke-width:2}li{margin:12px 0}p{overflow-wrap:anywhere}@media(max-width:600px){.grid{grid-template-columns:1fr}body{padding:14px}}</style><h1>Blackout Proof review</h1>'
+        + summary
+        + "<p>Geometry-only page previews show dark cover locations. Source text and images are deliberately omitted. A rectangle is a review region, not proof of a failed redaction. Findings remain heuristic; a clean result does not prove sanitization.</p><nav>"
         + links
         + "</nav>"
         + "".join(sections)

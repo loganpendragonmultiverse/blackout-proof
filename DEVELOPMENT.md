@@ -1,15 +1,33 @@
 # Development handoff
 
-Blackout Proof is a read-only structural verifier. Value-free reports and preservation of the source PDF are hard constraints. Version 1.1 does not edit PDFs, classify legal compliance, or claim that a clean report proves complete sanitization. OCR is explicit opt-in and emits counts only. Detection changes require purpose-built PDFs and false-positive tests.
+Blackout Proof is a read-only structural verifier. Value-free reports and source
+preservation are hard constraints. Keep it separate from PDF editing/redaction,
+legal compliance classification, malware scanning and automated truth judgments.
+OCR is explicit opt-in, and reports contain counts only. Do not include source PDF
+text, image previews, metadata values, attachment names or annotation comments.
 
-## 1.1.0 improvement session
+Before changing detection, reproduce the behavior using synthetic real PDFs and
+include a false-positive test. BP007 uses each traced glyph
+span's own `seqno` and the drawing's `seqno`; a prior background is not a later cover. See the
+[upstream API](https://pymupdf.readthedocs.io/en/latest/functions.html#Page.get_texttrace).
+PDF object-name scanning excludes strings, hex strings and comments, and decodes
+escaped name bytes. Structural names do not prove execution or sensitive content.
 
-Add value-free HTML page geometry previews, opt-in local OCR counts and redaction edge-case fixtures.
+Keep file/page/xref/object/item/geometry/OCR budgets explicit and positively typed.
+Never turn an exhausted limit or failed requested OCR into a clean verdict. Native
+PDF operations may allocate/work before a returned result can be bounded; do not
+claim CPU/memory isolation. Recheck source bytes and identities before returning.
+New report files must not overwrite existing files or existing symbolic links.
 
-HTML links page findings to geometry-only previews of dark cover rectangles. To preserve value-free reports, previews omit all source text and imagery rather than embedding source PDF/raster content. --ocr optionally invokes local PyMuPDF/Tesseract OCR and reports only word counts or engine-unavailable status; it is a review aid and never proof of sanitization. Tests generate rotated text/pages, transparent covers, optional layers, applied redactions, encrypted and damaged PDFs and assert source hashes are unchanged. The OCR adapter is tested with controlled success/failure substitutes; native Tesseract acceptance is not claimed. Existing outputs are protected and encrypted PDFs require prior authorized local decryption.
+Use the six-platform/runtime CI matrix, strict typing, full branch-aware suite,
+dependency audit and CodeQL. Preserve their thresholds and required review/checks.
+Native OCR acceptance is a separate real-engine gate; adapter substitutes are not
+native proof. Retain Python 3.10 compatibility and the supported, audited PyMuPDF
+1.x range unless a separately authorized support change is made. Project MIT
+licensing does not cover PyMuPDF's AGPL/commercial terms.
 
-Local formatting, lint, strict types and regression tests pass. Public release completion requires the protected CI/CodeQL matrix, tagged artifacts and matching Forge catalog/detail deployment.
-
-## 1.2.0 — 2026-10-16
-
-BP008 is a warning with the page number and annotation count. It participates in `--fail-on-findings` and appears in JSON, Markdown and HTML. Annotation text, replacement text and underlying document text are never copied into the warning. Applied redactions no longer have pending markers. Stroke-only annotation drawings with no fill opacity are handled without crashing.
+Release the exact protected squash commit through an annotated tag. Verify both
+tag-built archives contain the exact docs, sources, tests and examples, then run
+full suites and installed-example/native OCR acceptance outside the checkout with
+installed import-origin assertions. Verify public asset hashes, descriptions and
+Forge catalog/details before calling the release complete. No autonomous releases.
