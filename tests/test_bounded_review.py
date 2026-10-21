@@ -290,3 +290,11 @@ def test_cover_in_text_span_whitespace_is_not_a_glyph(tmp_path):
         page.draw_rect(pymupdf.Rect(100, 45, 110, 80), fill=(0, 0, 0))
         document.save(path)
     assert "BP007" not in {item["code"] for item in inspect_pdf(path)["findings"]}
+
+
+def test_huge_valid_budget_does_not_overflow_native_read_size(tmp_path):
+    source = tmp_path / "sample.pdf"
+    sample(source)
+    assert inspect_pdf(source, limits=InspectionLimits(max_file_bytes=10**100))[
+        "inspectionComplete"
+    ]

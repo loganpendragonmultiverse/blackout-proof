@@ -297,7 +297,7 @@ def inspect_pdf(
         if not stat.S_ISREG(original.st_mode):
             raise InspectionError("Input must be a regular PDF file")
         _within(original.st_size, selected.max_file_bytes, "file bytes")
-        raw = stream.read(selected.max_file_bytes + 1)
+        raw = stream.read(min(selected.max_file_bytes, original.st_size) + 1)
         _within(len(raw), selected.max_file_bytes, "file bytes")
         digest = hashlib.sha256(raw).hexdigest()
         try:
@@ -319,10 +319,22 @@ def inspect_pdf(
             read += len(block)
             _within(read, selected.max_file_bytes, "source verification bytes")
             check.update(block)
-        if (
-            _identity(original) != _identity(os.fstat(stream.fileno()))
-            or _identity(original) != _identity(path.stat())
-            or check.hexdigest() != digest
-        ):
-            raise InspectionError("Source changed during inspection; no complete result")
+        field_names = ("device", "inode", "size", "mtime_ns", "ctime_ns")
+        differences: list[str] = []
+        for label, current in (("descriptor", os.fstat(stream.fileno())), ("path", path.stat())):
+            differences.extend(
+                label + ":" + name
+                for name, before, after in zip(
+                    field_names, _identity(original), _identity(current), strict=True
+                )
+                if before != after
+            )
+        if check.hexdigest() != digest:
+            differences.append("content-hash")
+        if differences:
+            raise InspectionError(
+                "Source changed during inspection ("
+                + ", ".join(differences)
+                + "); no complete result"
+            )
         return {**result, "source": path.name, "sourceSha256": digest}
