@@ -31,3 +31,12 @@ tag-built archives contain the exact docs, sources, tests and examples, then run
 full suites and installed-example/native OCR acceptance outside the checkout with
 installed import-origin assertions. Verify public asset hashes, descriptions and
 Forge catalog/details before calling the release complete. No autonomous releases.
+
+## 1.3.1 release artifact closure
+
+The Python 3.12 tag workflow checks the stable tag, project metadata and literal
+runtime version before building. It repeats the original formatting, lint, strict
+typing, full coverage-gated suite and shipped-dependency audit, verifies exact
+wheel/sdist names and metadata, and emits SHA256SUMS. Native Linux OCR acceptance,
+independent installed-artifact review and public/Forge verification remain separate
+required release gates. The workflow does not publish a release automatically.

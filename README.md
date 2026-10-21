@@ -5,7 +5,7 @@ recoverable after redaction. It is for people reviewing a document before sharin
 it. Reports contain counts, page numbers and cover geometry, with no document text,
 metadata values, attachment names, annotation comments or source imagery.
 
-Current release: **v1.3.0**. Requires Python **3.10+** on Windows, macOS or Linux.
+Current release: **v1.3.1**. Requires Python **3.10+** on Windows, macOS or Linux.
 
 ## Three-minute start
 
